@@ -1,15 +1,15 @@
-from django.shortcuts import render
+from django_filters import rest_framework as django_filters
 from rest_framework_json_api.views import ModelViewSet
-from django_filters import rest_framework as filters
+
 from .models import Transaction
 from .serializers import TransactionSerializer
 
 
-class TransactionFilter(filters.FilterSet):
-    min_amount = filters.NumberFilter(field_name="amount", lookup_expr='gte')
-    max_amount = filters.NumberFilter(field_name="amount", lookup_expr='lte')
-    wallet = filters.NumberFilter(field_name="wallet__id")
-    txid = filters.CharFilter(field_name="txid", lookup_expr='icontains')
+class TransactionFilter(django_filters.FilterSet):
+    min_amount = django_filters.NumberFilter(field_name='amount', lookup_expr='gte')
+    max_amount = django_filters.NumberFilter(field_name='amount', lookup_expr='lte')
+    wallet = django_filters.UUIDFilter(field_name='wallet')
+    txid = django_filters.CharFilter(field_name='txid', lookup_expr='icontains')
 
     class Meta:
         model = Transaction
@@ -19,49 +19,32 @@ class TransactionFilter(filters.FilterSet):
 class TransactionViewSet(ModelViewSet):
     """
     API endpoint for managing transactions.
-    
-    Transactions represent money movements between wallets.
-    Each transaction has a unique transaction ID (txid) and affects the balance of its associated wallet.
-    Negative transactions (withdrawals) are only allowed if the wallet has sufficient balance.
-    
+
+    Transactions represent monetary operations within a wallet. Each transaction
+    affects the wallet's balance and must have a unique transaction ID (txid).
+
     list:
-        Return a list of all transactions.
-        Can be filtered by:
-        - min_amount: Filter transactions with amount greater than or equal to this value
-        - max_amount: Filter transactions with amount less than or equal to this value
-        - wallet: Filter transactions by wallet ID
-        - txid: Search transactions by transaction ID (case-insensitive)
-        
-        Can be ordered by:
-        - amount: Order by transaction amount
-        - created_at: Order by transaction creation date
-        
+    Returns a paginated list of all transactions. Can be filtered by amount range,
+    wallet ID, and transaction ID.
+
     create:
-        Create a new transaction.
-        Required fields:
-        - wallet: The ID of the wallet this transaction belongs to
-        - txid: A unique transaction ID
-        - amount: The transaction amount (positive for deposits, negative for withdrawals)
-        
-        Note: Withdrawals (negative amounts) will fail if the wallet has insufficient balance.
-        
+    Creates a new transaction. The amount must be positive, and the wallet must
+    have sufficient balance for debit transactions.
+
     retrieve:
-        Return details of a specific transaction.
-        
+    Returns the details of a specific transaction.
+
     update:
-        Update all fields of a specific transaction.
-        Note: Updating transactions may affect wallet balances.
-        
+    Updates are not allowed for transactions to maintain financial integrity.
+
     partial_update:
-        Update one or more fields of a specific transaction.
-        Note: Updating transactions may affect wallet balances.
-        
+    Partial updates are not allowed for transactions.
+
     delete:
-        Delete a specific transaction.
-        Note: Deleting transactions may affect wallet balances.
+    Deleting transactions is not allowed to maintain financial records.
     """
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
     filterset_class = TransactionFilter
-    ordering_fields = ['amount', 'created_at']
-    ordering = ['-id']
+    ordering_fields = ['created_at', 'amount']
+    ordering = ['-created_at']

@@ -1,6 +1,7 @@
 import uuid
-from django.db import models
+
 from django.core.validators import MinValueValidator
+from django.db import models
 
 
 class Wallet(models.Model):
@@ -12,10 +13,11 @@ class Wallet(models.Model):
         default=0,
         validators=[MinValueValidator(0)],
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'wallets'
-        ordering = ['label']
+        db_table = "wallets"
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.label} ({self.balance})"

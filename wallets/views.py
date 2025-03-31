@@ -1,14 +1,14 @@
-from django.shortcuts import render
+from django_filters import rest_framework as django_filters
 from rest_framework_json_api.views import ModelViewSet
-from django_filters import rest_framework as filters
+
 from .models import Wallet
 from .serializers import WalletSerializer
 
 
-class WalletFilter(filters.FilterSet):
-    min_balance = filters.NumberFilter(field_name="balance", lookup_expr='gte')
-    max_balance = filters.NumberFilter(field_name="balance", lookup_expr='lte')
-    label = filters.CharFilter(field_name="label", lookup_expr='icontains')
+class WalletFilter(django_filters.FilterSet):
+    min_balance = django_filters.NumberFilter(field_name='balance', lookup_expr='gte')
+    max_balance = django_filters.NumberFilter(field_name='balance', lookup_expr='lte')
+    label = django_filters.CharFilter(field_name='label', lookup_expr='icontains')
 
     class Meta:
         model = Wallet
@@ -18,42 +18,31 @@ class WalletFilter(filters.FilterSet):
 class WalletViewSet(ModelViewSet):
     """
     API endpoint for managing wallets.
-    
-    Wallets represent user accounts that can hold a balance and have associated transactions.
-    The balance field is read-only and is automatically managed through transactions.
-    
+
+    Wallets represent accounts that can hold and transfer funds. Each wallet
+    maintains a balance and is identified by a unique label.
+
     list:
-        Return a list of all wallets.
-        Can be filtered by:
-        - min_balance: Filter wallets with balance greater than or equal to this value
-        - max_balance: Filter wallets with balance less than or equal to this value
-        - label: Search wallets by label (case-insensitive)
-        
-        Can be ordered by:
-        - balance: Order by wallet balance
-        - label: Order by wallet label
-        
+    Returns a paginated list of all wallets. Can be filtered by balance range
+    and label.
+
     create:
-        Create a new wallet.
-        Required fields:
-        - label: A descriptive name for the wallet
-        
+    Creates a new wallet with the specified label. Initial balance is set to 0.
+
     retrieve:
-        Return details of a specific wallet.
-        
+    Returns the details of a specific wallet.
+
     update:
-        Update all fields of a specific wallet.
-        The balance field cannot be modified directly.
-        
+    Updates the label of a specific wallet. Balance cannot be directly modified.
+
     partial_update:
-        Update one or more fields of a specific wallet.
-        The balance field cannot be modified directly.
-        
+    Updates the label of a specific wallet. Balance cannot be directly modified.
+
     delete:
-        Delete a specific wallet.
+    Deletes a specific wallet if it has a zero balance.
     """
     queryset = Wallet.objects.all()
     serializer_class = WalletSerializer
     filterset_class = WalletFilter
-    ordering_fields = ['balance', 'label']
-    ordering = ['label']
+    ordering_fields = ['created_at', 'balance', 'label']
+    ordering = ['-created_at']
